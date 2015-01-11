@@ -7,7 +7,7 @@ import copy
 
 import pdb
 
-DEBUG = True
+DEBUG = False
 
 BORDER = '#'
 FILLED = '■'
@@ -20,6 +20,8 @@ COLUMNS = 25
 
 def main(stdscr = None):
 
+    stdscr.nodelay(1)
+
     if stdscr is None:
         graphics = DebugGraphics()
     else:
@@ -30,12 +32,20 @@ def main(stdscr = None):
     while True:
         board.draw()
 
-        if board.current_block_can_drop():
+        # drop/spawn current block
+        if board.can_drop_current_block():
             board.drop_current_block()
         else:
             board.spawn_block()
 
+        # handle user input
+        key = stdscr.getch()
+        if key != -1:
+            if key == curses.KEY_LEFT:
+                board.move_current_block_left()
+
         board.update_block_state()
+        stdscr.refresh()
         time.sleep(0.2)
 
 
@@ -103,13 +113,13 @@ class Board:
     def spawn_block(self):
         self.current_block = Block()
 
-    def current_block_can_drop(self):
+    def can_drop_current_block(self):
         if self.current_block is None:
             return False
         for position in self.current_block.positions:
-            debug("currpos: " + str(position))
-            point_below = position.point_below()
-            debug("below: " + str(point_below))
+            # debug("currpos: " + str(position))
+            point_below = position.get_point_below()
+            # debug("below: " + str(get_point_below))
             if self.get_state(point_below) != EMPTY:
                 return False
         return True
@@ -117,14 +127,38 @@ class Board:
     def drop_current_block(self):
         self.current_block.drop()
 
+    def can_move_current_block_left(self):
+        leftmost_position = None
+        left_positions = set()
+        for position in self.current_block.positions:
+            if leftmost_position is None or position.to_left_of(leftmost_position):
+                leftmost_position = position
+                left_positions.clear()
+                left_positions.add(position)
+            elif position.x == leftmost_position.x:
+                left_positions.add(position)
+
+        for position in left_positions:
+            point_to_left = position.get_point_to_left()
+            if self.get_state(point_to_left) != EMPTY:
+                return False
+
+        return True
+
+    def can_move_current_block_right(self):
+        pass
+
+    def move_current_block_left(self):
+        if self.can_move_current_block_left():
+            self.current_block.left()
+
     def update_block_state(self):
         for old_position in self.current_block.old_positions:
             self.set_state(old_position, EMPTY)
+        self.current_block.old_positions.clear()
         for position in self.current_block.positions:
             self.set_state(position, FILLED)
-
     
-
 
 class Block:
 
@@ -139,25 +173,32 @@ class Block:
         self.positions = set()
         for x, row in enumerate(self.shape):
             for y, point in enumerate(row):
-                # debug("here:", x, y)
                 if point == FILLED:
                     position = top_left_point + Point(x, y)
                     self.positions.add(position)
-                    # debug("here2:", position)
 
     def drop(self):
-        self.old_positions = copy.deepcopy(self.positions)
+        self._store_old_positions()
         for position in self.positions:
             position.lower()
             debug("here:", position)
 
-        # # alt:
-        # self.old_positions = deepcopy(self.positions)
-        # for point in self.positions:
-        #     point = point.point_below()
+    def left(self):
+        self._store_old_positions()
+        for position in self.positions:
+            position.left()
+
+    def right(self):
+        self._store_old_positions()
+        for position in self.positions:
+            position.right()
+
+    def _store_old_positions(self):
+        self.old_positions.update(copy.deepcopy(self.positions))
 
 
 class Point:
+    # TODO make so set inclusion sees points as equal
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -171,8 +212,26 @@ class Point:
     def lower(self):
         self.y += 1
 
-    def point_below(self):
+    def left(self):
+        self.x -= 1
+
+    def right(self):
+        self.x += 1
+
+    def to_left_of(self, other):
+        return self.x < other.x
+
+    def to_right_of(self, other):
+        return self.x > other.x
+
+    def get_point_below(self):
         return Point(self.x, self.y + 1)
+
+    def get_point_to_left(self):
+        return Point(self.x - 1, self.y)
+
+    def get_point_to_right(self):
+        return Point(self.x + 1, self.y)
 
 
 if __name__ == '__main__':
