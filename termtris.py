@@ -17,8 +17,18 @@ ROWS = 25
 COLUMNS = 25
 
 
-SHAPE = ((EMPTY, EMPTY, EMPTY, EMPTY),
-		 (FILLED, FILLED, FILLED, FILLED))
+SHAPE = ((FILLED, FILLED, FILLED, FILLED))
+
+
+# class Point:
+
+# 	def __init__(self, x, y):
+# 		self.x = x
+# 		self.y = y
+
+# 	def point_below(self):
+# 		return Point(self.x, self.y - 1)
+
 
 class Tetronimo:
 
@@ -27,9 +37,30 @@ class Tetronimo:
 		self.top_y = 0
 		self.shape = SHAPE
 		self.current_coords = set()
+		self.old_coords = set()
+		self._update_current_coords()
 
 	def drop(self):
 		self.top_y += 1
+		self._update_current_coords()
+
+	def _update_current_coords(self):
+		# add current coords to old coords to be cleared
+		for coord in self.current_coords:
+			self.old_coords.add(coord)
+
+		# set new current coords
+		self.current_coords.clear()
+		for y, row in enumerate(self.shape):
+			for x, pixel in enumerate(self.shape[y]):
+				if (pixel != EMPTY):
+					coord_x = self.top_x + x
+					coord_y = self.top_y + y
+					self.current_coords.add((coord_x, coord_y))
+
+	def _clear(self, window):
+		for (x, y) in self.current_coords:
+			window.addstr(y, x, EMPTY)
 
 	def draw(self, window):
 		self._clear(window)
@@ -41,10 +72,6 @@ class Tetronimo:
 					window.addstr(new_y, new_x, pixel)
 					self.current_coords.add((new_x, new_y))
 		window.refresh()
-
-	def _clear(self, window):
-		for (x, y) in self.current_coords:
-			window.addstr(y, x, EMPTY)
 
 
 class Board:
@@ -73,14 +100,48 @@ class Board:
 			
 		self.stdscr.refresh()
 
+	def set_block(self, block):
+		for coord in block.old_coords:
+			self._empty_point(coord)
+
+		block.old_coords.clear()
+
+		for coord in block.current_coords:
+			self._fill_point(coord)
+
+	def _empty_point(self, point):
+		self._set_point(EMPTY)
+
+	def _fill_point(self):
+		self._set_point(FILLED)
+
+	def _set_point(self, point, char):
+		self.state[point[0], point[1]] = char
+
+	def point_state(self, x, y):
+		if 0 <= x < COLUMNS and 0 <= y < ROWS:
+			return self.state[x][y]
+		else:
+			return BORDER
+
+	def can_drop(self, block):
+		for point in block.current_coords:
+			point_below = (point[0], point[1] + 1)
+			if self.point_state(point_below[0], point_below[1]) != EMPTY:
+				return False
+		return True
+
+
 def main(stdscr):
 	board = Board(stdscr)
 	board.draw()
 
 	block = Tetronimo()
 	while (True):
-		block.draw(stdscr)
-		block.drop()
+		board.draw()
+		# block.draw(stdscr)
+		if (board.can_drop(block)):
+			block.drop()
 		time.sleep(0.5)
 
 	stdscr.getkey()
