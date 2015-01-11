@@ -4,148 +4,145 @@ import curses
 import random
 import time
 
-# stdscr = curses.initscr()
-# stdscr.refresh()
+import pdb
 
 BORDER = '#'
 FILLED = '■'
 EMPTY = ' '
-
 
 GAP = 4 # gap between spawn zone and sides
 ROWS = 25
 COLUMNS = 25
 
 
-SHAPE = ((FILLED, FILLED, FILLED, FILLED))
+def main(stdscr):
+    board = Board(stdscr)
 
+    while True:
+        board.draw()
 
-# class Point:
+        # stdscr.getkey() # pause execution until key press
 
-# 	def __init__(self, x, y):
-# 		self.x = x
-# 		self.y = y
+        # stdscr.addstr(str(board.current_block_can_drop()))
+        # if board.current_block is not None:
+        #     for position in board.current_block.positions:
+        #         stdscr.addstr(str(position))
 
-# 	def point_below(self):
-# 		return Point(self.x, self.y - 1)
+        pdb.set_trace()
 
+        if board.current_block_can_drop():
+            board.drop_current_block()
+            # print("here")
+            # stdscr.getkey() # pause execution until key press
+        else:
+            # print("here")
+            board.spawn_block()
 
-class Tetronimo:
+        board.update_block_state()
+        time.sleep(0.5)
 
-	def __init__(self):
-		self.top_x = random.randrange(1 + GAP, ROWS - GAP)
-		self.top_y = 0
-		self.shape = SHAPE
-		self.current_coords = set()
-		self.old_coords = set()
-		self._update_current_coords()
-
-	def drop(self):
-		self.top_y += 1
-		self._update_current_coords()
-
-	def _update_current_coords(self):
-		# add current coords to old coords to be cleared
-		for coord in self.current_coords:
-			self.old_coords.add(coord)
-
-		# set new current coords
-		self.current_coords.clear()
-		for y, row in enumerate(self.shape):
-			for x, pixel in enumerate(self.shape[y]):
-				if (pixel != EMPTY):
-					coord_x = self.top_x + x
-					coord_y = self.top_y + y
-					self.current_coords.add((coord_x, coord_y))
-
-	def _clear(self, window):
-		for (x, y) in self.current_coords:
-			window.addstr(y, x, EMPTY)
-
-	def draw(self, window):
-		self._clear(window)
-		for y, row in enumerate(self.shape):
-			for x, pixel in enumerate(self.shape[y]):
-				if (pixel != EMPTY):
-					new_x = self.top_x + x
-					new_y = self.top_y + y
-					window.addstr(new_y, new_x, pixel)
-					self.current_coords.add((new_x, new_y))
-		window.refresh()
+    stdscr.getkey() # pause execution until key press
 
 
 class Board:
-	def __init__(self, stdscr):
-		self.stdscr = stdscr
-		self._draw_borders()
-		self.state = [[EMPTY for y in range(COLUMNS)] for x in range(ROWS)]
+    def __init__(self, stdscr):
+        self.stdscr = stdscr
+        self._draw_borders()
+        self.state = [[EMPTY for y in range(COLUMNS)] for x in range(ROWS)]
+        self.current_block = None
 
-	def _draw_borders(self):
-		# draw top and bottom
-		for x in range(COLUMNS + 2):
-			self.stdscr.addstr(0, x, BORDER)
-			self.stdscr.addstr(ROWS+1, x, BORDER)
+    def _draw_borders(self):
+        # draw top and bottom
+        for x in range(COLUMNS + 2): 
+            self.stdscr.addstr(0, x, BORDER)
+            self.stdscr.addstr(ROWS+1, x, BORDER)
 
-		# draw sides
-		for y in range(ROWS + 2):
-			self.stdscr.addstr(y, 0, BORDER)
-			self.stdscr.addstr(y, COLUMNS+1, BORDER)
+        # draw sides
+        for y in range(ROWS + 2):
+            self.stdscr.addstr(y, 0, BORDER)
+            self.stdscr.addstr(y, COLUMNS+1, BORDER)
 
-		self.stdscr.refresh()
+        self.stdscr.refresh()
 
-	def draw(self):
-		for y in range(ROWS):
-			for x in range(COLUMNS):
-				self.stdscr.addstr(y+1, x+1, self.state[y][x])
-			
-		self.stdscr.refresh()
+    def draw(self):
+        for y in range(ROWS):
+            for x in range(COLUMNS):
+                self.stdscr.addstr(y+1, x+1, self.state[y][x])
+            
+        self.stdscr.refresh()
 
-	def set_block(self, block):
-		for coord in block.old_coords:
-			self._empty_point(coord)
+    def get_state(self, point):
+        if 0 <= point.x < COLUMNS and 0 <= point.y < ROWS:
+            return self.state[point.x][point.y]
+        else:
+            return BORDER
 
-		block.old_coords.clear()
+    def spawn_block(self):
+        self.current_block = Block()
 
-		for coord in block.current_coords:
-			self._fill_point(coord)
+    def current_block_can_drop(self):
+        if self.current_block is None:
+            return False
+        for position in self.current_block.positions:
+            point_below = position.point_below()
+            if self.get_state(point_below) != EMPTY:
+                return False
+        return True
 
-	def _empty_point(self, point):
-		self._set_point(EMPTY)
+    def drop_current_block(self):
+        self.current_block.drop()
 
-	def _fill_point(self):
-		self._set_point(FILLED)
+    def update_block_state(self):
+        for old_position in self.current_block.old_positions:
+            self.set_state(old_position, EMPTY)
+        for position in self.current_block.positions:
+            self.set_state(position, FILLED)
 
-	def _set_point(self, point, char):
-		self.state[point[0], point[1]] = char
-
-	def point_state(self, x, y):
-		if 0 <= x < COLUMNS and 0 <= y < ROWS:
-			return self.state[x][y]
-		else:
-			return BORDER
-
-	def can_drop(self, block):
-		for point in block.current_coords:
-			point_below = (point[0], point[1] + 1)
-			if self.point_state(point_below[0], point_below[1]) != EMPTY:
-				return False
-		return True
-
-
-def main(stdscr):
-	board = Board(stdscr)
-	board.draw()
-
-	block = Tetronimo()
-	while (True):
-		board.draw()
-		# block.draw(stdscr)
-		if (board.can_drop(block)):
-			block.drop()
-		time.sleep(0.5)
-
-	stdscr.getkey()
+    def set_state(self, point, symbol):
+        self.state[point.x][point.y] = symbol
 
 
-curses.wrapper(main)
+class Block:
 
+    SHAPE = ((FILLED, FILLED, FILLED, FILLED))
+
+    def __init__(self):
+        self.shape = Block.SHAPE
+        top_left_pos = Point(random.randrange(0, COLUMNS - GAP), 0)
+        self.old_positions = set()
+        self.positions = set()
+        for y, row in enumerate(self.shape):
+            for x, point in enumerate(self.shape[y]):
+                if point == FILLED:
+                    self.positions.add(Point(x, y))
+
+    def drop(self):
+        self.old_positions = positions.copy()
+        for point in self.positions:
+            new_point = point.point_below()
+            self.positions.remove(point)
+            self.positions.add(new_point)
+
+        # alt:
+        # self.old_positions = positions.deepcopy()
+        # for point in self.positions:
+        #     point = point.point_below()
+
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return '({0},{1})'.format(self.x, self.y)
+
+    def __add__(self, other):
+        return Point(self.x + other.x, self.y + other.y)
+
+    def point_below(self):
+        return Point(self.x, self.y + 1)
+
+
+if __name__ == '__main__':
+    curses.wrapper(main)
