@@ -6,6 +6,8 @@ import time
 
 import pdb
 
+DEBUG = True
+
 BORDER = '#'
 FILLED = '■'
 EMPTY = ' '
@@ -15,20 +17,19 @@ ROWS = 25
 COLUMNS = 25
 
 
-def main(stdscr):
-    board = Board(stdscr)
+def main(stdscr = None):
+
+    if stdscr is None:
+        graphics = DebugGraphics()
+    else:
+        graphics = CursesGraphics(stdscr)
+
+    board = Board(graphics)
 
     while True:
         board.draw()
 
-        # stdscr.getkey() # pause execution until key press
-
-        # stdscr.addstr(str(board.current_block_can_drop()))
-        # if board.current_block is not None:
-        #     for position in board.current_block.positions:
-        #         stdscr.addstr(str(position))
-
-        pdb.set_trace()
+        # pdb.set_trace()
 
         if board.current_block_can_drop():
             board.drop_current_block()
@@ -44,9 +45,29 @@ def main(stdscr):
     stdscr.getkey() # pause execution until key press
 
 
-class Board:
+class CursesGraphics:
     def __init__(self, stdscr):
         self.stdscr = stdscr
+
+    def set_point(self, x, y, symbol):
+        self.stdscr.addstr(y, x, symbol)
+
+    def refresh(self):
+        self.stdscr.refresh()
+
+
+class DebugGraphics:
+    def set_point(self, x, y, symbol):
+        if symbol != EMPTY:
+            print("({0}, {1}) = '{2}'".format(x, y, symbol))
+
+    def refresh(self):
+        print("REFRESH")
+
+
+class Board:
+    def __init__(self, graphics):
+        self.graphics = graphics
         self._draw_borders()
         self.state = [[EMPTY for y in range(COLUMNS)] for x in range(ROWS)]
         self.current_block = None
@@ -54,22 +75,22 @@ class Board:
     def _draw_borders(self):
         # draw top and bottom
         for x in range(COLUMNS + 2): 
-            self.stdscr.addstr(0, x, BORDER)
-            self.stdscr.addstr(ROWS+1, x, BORDER)
+            self.graphics.set_point(x, 0, BORDER)
+            self.graphics.set_point(x, ROWS+1, BORDER)
 
         # draw sides
         for y in range(ROWS + 2):
-            self.stdscr.addstr(y, 0, BORDER)
-            self.stdscr.addstr(y, COLUMNS+1, BORDER)
+            self.graphics.set_point(0, y, BORDER)
+            self.graphics.set_point(COLUMNS+1, y, BORDER)
 
-        self.stdscr.refresh()
+        self.graphics.refresh()
 
     def draw(self):
         for y in range(ROWS):
             for x in range(COLUMNS):
-                self.stdscr.addstr(y+1, x+1, self.state[y][x])
+                self.graphics.set_point(x+1, y+1, self.state[x][y])
             
-        self.stdscr.refresh()
+        self.graphics.refresh()
 
     def get_state(self, point):
         if 0 <= point.x < COLUMNS and 0 <= point.y < ROWS:
@@ -81,10 +102,13 @@ class Board:
         self.current_block = Block()
 
     def current_block_can_drop(self):
+        # print(self.current_block)
+        # print(self.current_block is None)
         if self.current_block is None:
             return False
         for position in self.current_block.positions:
             point_below = position.point_below()
+            print(point_below)
             if self.get_state(point_below) != EMPTY:
                 return False
         return True
@@ -145,4 +169,7 @@ class Point:
 
 
 if __name__ == '__main__':
-    curses.wrapper(main)
+    if DEBUG:
+        main()
+    else:
+        curses.wrapper(main)
