@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import curses
 import random
@@ -15,12 +16,12 @@ GAP = 4 # gap between spawn zone and sides
 ROWS = 25
 COLUMNS = 25
 
-board_state = [[EMPTY for y in range(COLUMNS)] for x in range(ROWS)]
 
 SHAPE = ((EMPTY, EMPTY, EMPTY, EMPTY),
 		 (FILLED, FILLED, FILLED, FILLED))
 
 class Tetronimo:
+
 	def __init__(self):
 		self.top_x = random.randrange(1 + GAP, ROWS - GAP)
 		self.top_y = 0
@@ -46,33 +47,35 @@ class Tetronimo:
 			window.addstr(y, x, EMPTY)
 
 
-def draw_borders(window):
+class Board:
+	def __init__(self, stdscr):
+		self.stdscr = stdscr
+		self._draw_borders()
+		self.state = [[EMPTY for y in range(COLUMNS)] for x in range(ROWS)]
 
-	# draw top and bottom
-	for x in range(COLUMNS + 2):
-		window.addstr(0, x, BORDER)
-		window.addstr(ROWS+1, x, BORDER)
+	def _draw_borders(self):
+		# draw top and bottom
+		for x in range(COLUMNS + 2):
+			self.stdscr.addstr(0, x, BORDER)
+			self.stdscr.addstr(ROWS+1, x, BORDER)
 
 		# draw sides
-	for y in range(ROWS + 2):
-		window.addstr(y, 0, BORDER)
-		window.addstr(y, COLUMNS+1, BORDER)
+		for y in range(ROWS + 2):
+			self.stdscr.addstr(y, 0, BORDER)
+			self.stdscr.addstr(y, COLUMNS+1, BORDER)
 
-	window.refresh()
+		self.stdscr.refresh()
 
-def draw_board(window):
-	for y in range(ROWS):
-		for x in range(COLUMNS):
-			window.addstr(y+1, x+1, board_state[y][x])
+	def draw(self):
+		for y in range(ROWS):
+			for x in range(COLUMNS):
+				self.stdscr.addstr(y+1, x+1, self.state[y][x])
 			
-	window.refresh()
+		self.stdscr.refresh()
 
-def drop(shape):
-	pass
-
-def __main__(stdscr):
-	draw_borders(stdscr)
-	draw_board(stdscr)
+def main(stdscr):
+	board = Board(stdscr)
+	board.draw()
 
 	block = Tetronimo()
 	while (True):
@@ -83,5 +86,5 @@ def __main__(stdscr):
 	stdscr.getkey()
 
 
-curses.wrapper(__main__)
+curses.wrapper(main)
 
