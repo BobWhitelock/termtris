@@ -3,6 +3,7 @@
 import curses
 import random
 import time
+import copy
 
 import pdb
 
@@ -29,20 +30,18 @@ def main(stdscr = None):
     while True:
         board.draw()
 
-        # pdb.set_trace()
-
         if board.current_block_can_drop():
             board.drop_current_block()
-            # print("here")
-            # stdscr.getkey() # pause execution until key press
         else:
-            # print("here")
             board.spawn_block()
 
         board.update_block_state()
-        time.sleep(0.5)
+        time.sleep(0.2)
 
-    stdscr.getkey() # pause execution until key press
+
+def debug(*args):
+    if DEBUG:
+        print(*args)
 
 
 class CursesGraphics:
@@ -59,10 +58,10 @@ class CursesGraphics:
 class DebugGraphics:
     def set_point(self, x, y, symbol):
         if symbol != EMPTY:
-            print("({0}, {1}) = '{2}'".format(x, y, symbol))
+            debug("({0}, {1}) = '{2}'".format(x, y, symbol))
 
     def refresh(self):
-        print("REFRESH")
+        debug("REFRESH")
 
 
 class Board:
@@ -98,17 +97,19 @@ class Board:
         else:
             return BORDER
 
+    def set_state(self, point, symbol):
+        self.state[point.x][point.y] = symbol
+
     def spawn_block(self):
         self.current_block = Block()
 
     def current_block_can_drop(self):
-        # print(self.current_block)
-        # print(self.current_block is None)
         if self.current_block is None:
             return False
         for position in self.current_block.positions:
+            debug("currpos: " + str(position))
             point_below = position.point_below()
-            print(point_below)
+            debug("below: " + str(point_below))
             if self.get_state(point_below) != EMPTY:
                 return False
         return True
@@ -122,8 +123,7 @@ class Board:
         for position in self.current_block.positions:
             self.set_state(position, FILLED)
 
-    def set_state(self, point, symbol):
-        self.state[point.x][point.y] = symbol
+    
 
 
 class Block:
@@ -132,23 +132,27 @@ class Block:
 
     def __init__(self):
         self.shape = Block.SHAPE
-        top_left_pos = Point(random.randrange(0, COLUMNS - GAP), 0)
+
+        top_left_point = Point(random.randrange(GAP, COLUMNS - GAP), 0)
+
         self.old_positions = set()
         self.positions = set()
-        for y, row in enumerate(self.shape):
-            for x, point in enumerate(self.shape[y]):
+        for x, row in enumerate(self.shape):
+            for y, point in enumerate(row):
+                # debug("here:", x, y)
                 if point == FILLED:
-                    self.positions.add(Point(x, y))
+                    position = top_left_point + Point(x, y)
+                    self.positions.add(position)
+                    # debug("here2:", position)
 
     def drop(self):
-        self.old_positions = positions.copy()
-        for point in self.positions:
-            new_point = point.point_below()
-            self.positions.remove(point)
-            self.positions.add(new_point)
+        self.old_positions = copy.deepcopy(self.positions)
+        for position in self.positions:
+            position.lower()
+            debug("here:", position)
 
-        # alt:
-        # self.old_positions = positions.deepcopy()
+        # # alt:
+        # self.old_positions = deepcopy(self.positions)
         # for point in self.positions:
         #     point = point.point_below()
 
@@ -163,6 +167,9 @@ class Point:
 
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
+
+    def lower(self):
+        self.y += 1
 
     def point_below(self):
         return Point(self.x, self.y + 1)
