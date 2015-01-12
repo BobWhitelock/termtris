@@ -43,6 +43,8 @@ def main(stdscr = None):
         if key != -1:
             if key == curses.KEY_LEFT:
                 board.move_current_block_left()
+            elif key == curses.KEY_RIGHT:
+                board.move_current_block_right()
 
         board.update_block_state()
         stdscr.refresh()
@@ -83,7 +85,7 @@ class Board:
 
     def _draw_borders(self):
         # draw top and bottom
-        for x in range(COLUMNS + 2): 
+        for x in range(COLUMNS + 2):
             self.graphics.set_point(x, 0, BORDER)
             self.graphics.set_point(x, ROWS+1, BORDER)
 
@@ -98,7 +100,7 @@ class Board:
         for y in range(ROWS):
             for x in range(COLUMNS):
                 self.graphics.set_point(x+1, y+1, self.state[x][y])
-            
+
         self.graphics.refresh()
 
     def get_state(self, point):
@@ -116,11 +118,8 @@ class Board:
     def can_drop_current_block(self):
         if self.current_block is None:
             return False
-        for position in self.current_block.positions:
-            # debug("currpos: " + str(position))
-            point_below = position.get_point_below()
-            # debug("below: " + str(get_point_below))
-            if self.get_state(point_below) != EMPTY:
+        for position in self.current_block.below_positions:
+            if self.get_state(position.get_point_below()) != EMPTY:
                 return False
         return True
 
@@ -128,29 +127,28 @@ class Board:
         self.current_block.drop()
 
     def can_move_current_block_left(self):
-        leftmost_position = None
-        left_positions = set()
-        for position in self.current_block.positions:
-            if leftmost_position is None or position.to_left_of(leftmost_position):
-                leftmost_position = position
-                left_positions.clear()
-                left_positions.add(position)
-            elif position.x == leftmost_position.x:
-                left_positions.add(position)
-
-        for position in left_positions:
-            point_to_left = position.get_point_to_left()
-            if self.get_state(point_to_left) != EMPTY:
+        if self.current_block is None:
+            return False
+        for position in self.current_block.left_positions:
+            if self.get_state(position.get_point_to_left()) != EMPTY:
                 return False
-
         return True
-
-    def can_move_current_block_right(self):
-        pass
 
     def move_current_block_left(self):
         if self.can_move_current_block_left():
             self.current_block.left()
+
+    def can_move_current_block_right(self):
+        if self.current_block is None:
+            return False
+        for position in self.current_block.right_positions:
+            if self.get_state(position.get_point_to_right()) != EMPTY:
+                return False
+        return True
+
+    def move_current_block_right(self):
+        if self.can_move_current_block_right():
+            self.current_block.right()
 
     def update_block_state(self):
         for old_position in self.current_block.old_positions:
@@ -158,7 +156,7 @@ class Board:
         self.current_block.old_positions.clear()
         for position in self.current_block.positions:
             self.set_state(position, FILLED)
-    
+
 
 class Block:
 
@@ -166,16 +164,32 @@ class Block:
 
     def __init__(self):
         self.shape = Block.SHAPE
+        self._init_positions()
 
+    def _init_positions(self):
         top_left_point = Point(random.randrange(GAP, COLUMNS - GAP), 0)
 
         self.old_positions = set()
         self.positions = set()
+        self.left_positions = set()
+        self.right_positions = set()
+        self.below_positions = set()
+        self.above_positions = set()
+
         for x, row in enumerate(self.shape):
-            for y, point in enumerate(row):
-                if point == FILLED:
+            for y, symbol in enumerate(row):
+                if symbol == FILLED:
                     position = top_left_point + Point(x, y)
                     self.positions.add(position)
+
+                    if position.get_point_to_left() not in self.positions:
+                        self.left_positions.add(position)
+                    if position.get_point_to_right() not in self.positions:
+                        self.right_positions.add(position)
+                    if position.get_point_below() not in self.positions:
+                        self.below_positions.add(position)
+                    if position.get_point_below() not in self.positions:
+                        self.above_positions.add(position)
 
     def drop(self):
         self._store_old_positions()
@@ -198,7 +212,6 @@ class Block:
 
 
 class Point:
-    # TODO make so set inclusion sees points as equal
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -208,6 +221,12 @@ class Point:
 
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
+
+    def __eq__(self, other):
+        return self.x, self.y == other.x, other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
 
     def lower(self):
         self.y += 1
