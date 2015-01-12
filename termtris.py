@@ -7,7 +7,7 @@ import copy
 
 import pdb
 
-DEBUG = False
+DEBUG = True
 
 BORDER = '#'
 FILLED = '■'
@@ -17,10 +17,12 @@ GAP = 4 # gap between spawn zone and sides
 ROWS = 25
 COLUMNS = 25
 
+FPS = 60
+FRAME_LENGTH = 1 / FPS
+FALL_SPEED = 30 if not DEBUG else 0
+
 
 def main(stdscr = None):
-
-    stdscr.nodelay(1)
 
     if stdscr is None:
         graphics = DebugGraphics()
@@ -29,17 +31,24 @@ def main(stdscr = None):
 
     board = Board(graphics)
 
+    frames_until_drop = 0
     while True:
+        frame_start_time = time.time()
+
         board.draw()
 
         # drop/spawn current block
-        if board.can_drop_current_block():
-            board.drop_current_block()
+        if frames_until_drop == 0:
+            frames_until_drop = FALL_SPEED
+            if board.can_drop_current_block():
+                board.drop_current_block()
+            else:
+                board.spawn_block()
         else:
-            board.spawn_block()
+            frames_until_drop -= 1
 
         # handle user input
-        key = stdscr.getch()
+        key = graphics.read_input()
         if key != -1:
             if key == curses.KEY_LEFT:
                 board.move_current_block_left()
@@ -47,8 +56,12 @@ def main(stdscr = None):
                 board.move_current_block_right()
 
         board.update_block_state()
-        stdscr.refresh()
-        time.sleep(0.2)
+        # stdscr.refresh()
+
+        if not DEBUG:
+            frame_length = time.time() - frame_start_time
+            frame_sleep = FRAME_LENGTH - frame_length
+            time.sleep(frame_sleep)
 
 
 def debug(*args):
@@ -58,6 +71,8 @@ def debug(*args):
 
 class CursesGraphics:
     def __init__(self, stdscr):
+        curses.curs_set(0) # make cursor invisible
+        stdscr.nodelay(1) # make reading input with getch() non-blocking
         self.stdscr = stdscr
 
     def set_point(self, x, y, symbol):
@@ -65,6 +80,12 @@ class CursesGraphics:
 
     def refresh(self):
         self.stdscr.refresh()
+
+    def read_input(self):
+        key = self.stdscr.getch()
+        while self.stdscr.getch() != -1:
+            pass
+        return key
 
 
 class DebugGraphics:
@@ -74,6 +95,12 @@ class DebugGraphics:
 
     def refresh(self):
         debug("REFRESH")
+
+    def read_input(self):
+        user_input = input("Input: ")
+        key = user_input[0] if len(user_input) > 0 else ''
+        debug("Input read: '{0}'; key returned: '{1}'".format(user_input, key))
+        return ord(key)
 
 
 class Board:
