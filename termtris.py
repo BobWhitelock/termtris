@@ -193,11 +193,30 @@ class Board:
 
 
 class Block:
+    I_BLOCK = ((1, 1, 1, 1), )
 
-    SHAPE = ((FILLED, FILLED, FILLED, FILLED))
+    J_BLOCK = ((1, 0, 0),
+               (1, 1, 1))
+
+    L_BLOCK = ((0, 0, 1),
+               (1, 1, 1))
+
+    O_BLOCK = ((1, 1),
+               (1, 1))
+
+    S_BLOCK = ((0, 1, 1),
+               (1, 1, 0))
+
+    T_BLOCK = ((0, 1, 0),
+               (1, 1, 1))
+
+    Z_BLOCK = ((1, 1, 0),
+               (0, 1, 1))
+
+    SHAPES = (I_BLOCK, J_BLOCK, L_BLOCK, O_BLOCK, S_BLOCK, T_BLOCK, Z_BLOCK)
 
     def __init__(self):
-        self.shape = Block.SHAPE
+        self.shape = random.choice(Block.SHAPES)
         self._init_positions()
         self._init_position_tracking_sets()
 
@@ -210,9 +229,9 @@ class Block:
         top_left_point = Point(random.randrange(GAP, COLUMNS - GAP), 0)
         self.positions = set()
 
-        for x, row in enumerate(self.shape):
-            for y, symbol in enumerate(row):
-                if symbol == FILLED:
+        for y, column in enumerate(self.shape):
+            for x, filled in enumerate(column):
+                if filled:
                     position = top_left_point + Point(x, y)
                     self.positions.add(position)
 
