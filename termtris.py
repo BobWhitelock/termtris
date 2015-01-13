@@ -54,6 +54,9 @@ def main(stdscr = None):
                 board.move_current_block_left()
             elif key in (curses.KEY_RIGHT, ord('d')):
                 board.move_current_block_right()
+            elif key in (curses.KEY_DOWN, ord('s')):
+                while board.can_drop_current_block():
+                    board.drop_current_block()
 
         board.update_block_state()
         # stdscr.refresh()
