@@ -7,7 +7,7 @@ import copy
 
 import pdb
 
-DEBUG = True
+DEBUG = False
 
 BORDER = '#'
 FILLED = '■'
@@ -50,9 +50,9 @@ def main(stdscr = None):
         # handle user input
         key = graphics.read_input()
         if key != -1:
-            if key == curses.KEY_LEFT:
+            if key in (curses.KEY_LEFT, ord('a')):
                 board.move_current_block_left()
-            elif key == curses.KEY_RIGHT:
+            elif key in (curses.KEY_RIGHT, ord('d')):
                 board.move_current_block_right()
 
         board.update_block_state()
@@ -82,6 +82,7 @@ class CursesGraphics:
         self.stdscr.refresh()
 
     def read_input(self):
+        # read first char and skip any others
         key = self.stdscr.getch()
         while self.stdscr.getch() != -1:
             pass
