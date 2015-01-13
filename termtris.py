@@ -98,9 +98,12 @@ class DebugGraphics:
 
     def read_input(self):
         user_input = input("Input: ")
-        key = user_input[0] if len(user_input) > 0 else ''
-        debug("Input read: '{0}'; key returned: '{1}'".format(user_input, key))
-        return ord(key)
+        if len(user_input) > 0:
+            key = user_input[0]
+            debug("Input read: '{0}'; key returned: '{1}'".format(user_input, key))
+            return ord(key)
+        else:
+            return ''
 
 
 class Board:
