@@ -196,16 +196,16 @@ class Block:
     def __init__(self):
         self.shape = Block.SHAPE
         self._init_positions()
+        self._init_position_tracking_sets()
+
+        debug('Left positions: ', self.left_positions)
+        debug('Right positions: ', self.right_positions)
+        debug('Below positions: ', self.below_positions)
+        debug('Above positions: ', self.above_positions)
 
     def _init_positions(self):
         top_left_point = Point(random.randrange(GAP, COLUMNS - GAP), 0)
-
-        self.old_positions = set()
         self.positions = set()
-        self.left_positions = set()
-        self.right_positions = set()
-        self.below_positions = set()
-        self.above_positions = set()
 
         for x, row in enumerate(self.shape):
             for y, symbol in enumerate(row):
@@ -213,14 +213,23 @@ class Block:
                     position = top_left_point + Point(x, y)
                     self.positions.add(position)
 
-                    if position.get_point_to_left() not in self.positions:
-                        self.left_positions.add(position)
-                    if position.get_point_to_right() not in self.positions:
-                        self.right_positions.add(position)
-                    if position.get_point_below() not in self.positions:
-                        self.below_positions.add(position)
-                    if position.get_point_below() not in self.positions:
-                        self.above_positions.add(position)
+    def _init_position_tracking_sets(self):
+        self.old_positions = set()
+
+        self.left_positions = set()
+        self.right_positions = set()
+        self.below_positions = set()
+        self.above_positions = set()
+
+        for position in self.positions:
+            if position.get_point_to_left() not in self.positions:
+                self.left_positions.add(position)
+            if position.get_point_to_right() not in self.positions:
+                self.right_positions.add(position)
+            if position.get_point_below() not in self.positions:
+                self.below_positions.add(position)
+            if position.get_point_below() not in self.positions:
+                self.above_positions.add(position)
 
     def drop(self):
         self._store_old_positions()
@@ -249,6 +258,9 @@ class Point:
 
     def __str__(self):
         return '({0},{1})'.format(self.x, self.y)
+
+    def __repr__(self):
+        return 'Point{0}'.format(str(self))
 
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
