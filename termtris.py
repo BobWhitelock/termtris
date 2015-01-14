@@ -218,7 +218,8 @@ class Block:
     def __init__(self):
         self.shape = random.choice(Block.SHAPES)
         self._init_positions()
-        self._init_position_tracking_sets()
+        self.old_positions = set()
+        self._generate_position_tracking_sets()
 
         debug('Left positions: ', self.left_positions)
         debug('Right positions: ', self.right_positions)
@@ -227,16 +228,24 @@ class Block:
 
     def _init_positions(self):
         top_left_point = Point(random.randrange(GAP, COLUMNS - GAP), 0)
-        self.positions = set()
+        self._set_positions_given_top_left_point(top_left_point)
 
+    def _set_positions_given_top_left_point(self, top_left_point):
+        """Create set of positions the block is currently occupying, given
+        self.shape and starting from the top_left_point Point parameter.
+        """
+
+        self.positions = set()
         for y, column in enumerate(self.shape):
             for x, filled in enumerate(column):
                 if filled:
                     position = top_left_point + Point(x, y)
                     self.positions.add(position)
 
-    def _init_position_tracking_sets(self):
-        self.old_positions = set()
+    def _generate_position_tracking_sets(self):
+        """Generate sets containing references to the positions currently on
+        each of the four sides of the block.
+        """
 
         self.left_positions = set()
         self.right_positions = set()
@@ -268,6 +277,14 @@ class Block:
         self._store_old_positions()
         for position in self.positions:
             position.right()
+
+    def rotate_clockwise(self):
+        #TODO
+        pass
+
+    def rotate_anticlockwise(self):
+        #TODO
+        pass
 
     def _store_old_positions(self):
         self.old_positions.update(copy.deepcopy(self.positions))
