@@ -227,6 +227,7 @@ class Block:
         debug('Above positions: ', self.above_positions)
 
     def _init_positions(self):
+        #TODO: make top_left_point only give points which will set block within GAP distance from either side - will depend on shape's width
         top_left_point = Point(random.randrange(GAP, COLUMNS - GAP), 0)
         self._set_positions_given_top_left_point(top_left_point)
 
