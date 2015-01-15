@@ -193,24 +193,27 @@ class Board:
 
 
 class Block:
-    I_BLOCK = ((1, 1, 1, 1), )
+
+    # 0 = empty; 1 = filled; 2 = filled and pivot  #TODO structure this better?
+
+    I_BLOCK = ((1, 1, 2, 1), )
 
     J_BLOCK = ((1, 0, 0),
-               (1, 1, 1))
+               (1, 2, 1))
 
     L_BLOCK = ((0, 0, 1),
-               (1, 1, 1))
+               (1, 2, 1))
 
     O_BLOCK = ((1, 1),
                (1, 1))
 
-    S_BLOCK = ((0, 1, 1),
+    S_BLOCK = ((0, 2, 1),
                (1, 1, 0))
 
-    T_BLOCK = ((0, 1, 0),
+    T_BLOCK = ((0, 2, 0),
                (1, 1, 1))
 
-    Z_BLOCK = ((1, 1, 0),
+    Z_BLOCK = ((1, 2, 0),
                (0, 1, 1))
 
     SHAPES = (I_BLOCK, J_BLOCK, L_BLOCK, O_BLOCK, S_BLOCK, T_BLOCK, Z_BLOCK)
@@ -237,11 +240,14 @@ class Block:
         """
 
         self.positions = set()
+        self.pivot = None
         for y, column in enumerate(self.shape):
-            for x, filled in enumerate(column):
-                if filled:
+            for x, state in enumerate(column):
+                if state:
                     position = top_left_point + Point(x, y)
                     self.positions.add(position)
+                    if state == 2:
+                        self.pivot = position
 
     def _generate_position_tracking_sets(self):
         """Generate sets containing references to the positions currently on
