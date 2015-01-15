@@ -7,7 +7,7 @@ import copy
 
 import pdb
 
-DEBUG = False
+DEBUG = True
 
 BORDER = '#'
 FILLED = '■'
@@ -194,27 +194,32 @@ class Board:
 
 class Block:
 
-    # 0 = empty; 1 = filled; 2 = filled and pivot  #TODO structure this better?
+    #TODO better names?
 
-    I_BLOCK = ((1, 1, 2, 1), )
+    EMPTY_STATE = 0
+    FILLED_STATE = 1
+    PIVOT_STATE = 2
+    FILLED_STATES = (FILLED_STATE, PIVOT_STATE)
 
-    J_BLOCK = ((1, 0, 0),
-               (1, 2, 1))
+    I_BLOCK = ((FILLED_STATE, FILLED_STATE, PIVOT_STATE, FILLED_STATE), )
 
-    L_BLOCK = ((0, 0, 1),
-               (1, 2, 1))
+    J_BLOCK = ((FILLED_STATE, EMPTY_STATE, EMPTY_STATE),
+               (FILLED_STATE, PIVOT_STATE, FILLED_STATE))
 
-    O_BLOCK = ((1, 1),
-               (1, 1))
+    L_BLOCK = ((EMPTY_STATE, EMPTY_STATE, FILLED_STATE),
+               (FILLED_STATE, PIVOT_STATE, FILLED_STATE))
 
-    S_BLOCK = ((0, 2, 1),
-               (1, 1, 0))
+    O_BLOCK = ((FILLED_STATE, FILLED_STATE),
+               (FILLED_STATE, FILLED_STATE))
 
-    T_BLOCK = ((0, 2, 0),
-               (1, 1, 1))
+    S_BLOCK = ((EMPTY_STATE, PIVOT_STATE, FILLED_STATE),
+               (FILLED_STATE, FILLED_STATE, EMPTY_STATE))
 
-    Z_BLOCK = ((1, 2, 0),
-               (0, 1, 1))
+    T_BLOCK = ((EMPTY_STATE, PIVOT_STATE, EMPTY_STATE),
+               (FILLED_STATE, FILLED_STATE, FILLED_STATE))
+
+    Z_BLOCK = ((FILLED_STATE, PIVOT_STATE, EMPTY_STATE),
+               (EMPTY_STATE, FILLED_STATE, FILLED_STATE))
 
     SHAPES = (I_BLOCK, J_BLOCK, L_BLOCK, O_BLOCK, S_BLOCK, T_BLOCK, Z_BLOCK)
 
@@ -224,6 +229,7 @@ class Block:
         self.old_positions = set()
         self._generate_position_tracking_sets()
 
+        debug('All positions: ', self.positions)
         debug('Left positions: ', self.left_positions)
         debug('Right positions: ', self.right_positions)
         debug('Below positions: ', self.below_positions)
@@ -243,11 +249,13 @@ class Block:
         self.pivot = None
         for y, column in enumerate(self.shape):
             for x, state in enumerate(column):
-                if state:
+                if state in Block.FILLED_STATES:
                     position = top_left_point + Point(x, y)
                     self.positions.add(position)
-                    if state == 2:
+                    if state is Block.PIVOT_STATE:
                         self.pivot = position
+
+        debug('Pivot: ', self.pivot)
 
     def _generate_position_tracking_sets(self):
         """Generate sets containing references to the positions currently on
@@ -273,7 +281,6 @@ class Block:
         self._store_old_positions()
         for position in self.positions:
             position.lower()
-            debug("here:", position)
 
     def left(self):
         self._store_old_positions()
