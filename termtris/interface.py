@@ -1,5 +1,8 @@
 import curses
 
+import config
+from debug import debug
+
 
 class CursesGraphics:
     def __init__(self, stdscr):
@@ -23,8 +26,9 @@ class CursesGraphics:
 
 class DebugGraphics:
     def set_point(self, x, y, symbol):
-        if symbol != EMPTY:
-            debug("({0}, {1}) = '{2}'".format(x, y, symbol))
+        pass
+        # if symbol != config.EMPTY:
+            # debug("({0}, {1}) = '{2}'".format(x, y, symbol))
 
     def refresh(self):
         debug("REFRESH")

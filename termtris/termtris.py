@@ -42,7 +42,7 @@ def main(stdscr = None):
             elif key in (curses.KEY_RIGHT, ord('d')):
                 board.move_current_block_right()
             elif key in (curses.KEY_UP, ord('w')):
-                board.current_block.rotate_clockwise()
+                board.rotate_current_block_clockwise()
             elif key in (curses.KEY_DOWN, ord('s')):
                 while board.can_drop_current_block():
                     board.drop_current_block()

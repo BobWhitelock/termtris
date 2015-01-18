@@ -110,12 +110,19 @@ class Board:
         if self.can_move_current_block_right():
             self.current_block.right()
 
+    def rotate_current_block_clockwise(self):
+        self.current_block.rotate_clockwise()
+
+    def rotate_current_block_anticlockwise(self):
+        self.current_block.rotate_anticlockwise()
+
     def update_block_state(self):
         for old_position in self.current_block.old_positions:
             self.set_state(old_position, config.EMPTY)
         self.current_block.old_positions.clear()
         for position in self.current_block.positions:
             self.set_state(position, config.FILLED)
+            debug('Position:', position)
 
 
 class Block:
@@ -207,11 +214,8 @@ class Point:
         self.x = x
         self.y = y
 
-    def __str__(self):
-        return '({0},{1})'.format(self.x, self.y)
-
     def __repr__(self):
-        return 'Point{0}'.format(str(self))
+        return '[Point({0},{1}) - id:{2}]'.format(self.x, self.y, id(self))
 
     def __add__(self, other):
         return Point(self.x + other.x, self.y + other.y)
@@ -235,24 +239,28 @@ class Point:
         self.x += 1
 
     def rotate_clockwise_about_point(self, pivot):
+        debug('\n', 'Original point:', self)
         point_relative_to_pivot = self - pivot
+        debug('Point relative to pivot:', point_relative_to_pivot)
         point_relative_to_pivot._rotate_about_origin_by_angle(math.pi / 2)
+        debug('Point relative to pivot rotated:', point_relative_to_pivot)
         rotated_point = point_relative_to_pivot + pivot
         self.x = int(rotated_point.x)
         self.y = int(rotated_point.y)
+        debug('Rotated original point:', self, '\n')
 
     def rotate_anticlockwise_about_point(self, pivot):
         pass
 
     def _rotate_about_origin_by_angle(self, radians):
-        x_coeffs = (math.cos(radians), -math.sin(radians))
-        y_coeffs = (math.sin(radians), math.cos(radians))
+        rotation_matrix = ((math.cos(radians), -math.sin(radians)),
+                           (math.sin(radians), math.cos(radians)))
 
         old_x = copy.deepcopy(self.x)
         old_y = copy.deepcopy(self.y)
 
-        self.x = sum([old_x * coeff for coeff in x_coeffs])
-        self.y = sum([old_y * coeff for coeff in y_coeffs])
+        self.x = int(round(rotation_matrix[0][0]*old_x + rotation_matrix[0][1]*old_y))
+        self.y = int(round(rotation_matrix[1][0]*old_x + rotation_matrix[1][1]*old_y))
 
     def to_left_of(self, other):
         return self.x < other.x
