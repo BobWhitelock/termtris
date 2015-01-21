@@ -22,6 +22,8 @@ def main(stdscr = None):
     while True:
         frame_start_time = time.time()
 
+        board.update_block_state()
+
         board.draw()
 
         # drop/spawn current block

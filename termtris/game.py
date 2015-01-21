@@ -117,12 +117,14 @@ class Board:
         self.current_block.rotate_anticlockwise()
 
     def update_block_state(self):
-        for old_position in self.current_block.old_positions:
-            self.set_state(old_position, config.EMPTY)
-        self.current_block.old_positions.clear()
-        for position in self.current_block.positions:
-            self.set_state(position, config.FILLED)
-            debug('Position:', position)
+        if self.current_block is not None:
+            debug('In update: old positions = {}, current positions = {}'.format(self.current_block.old_positions, self.current_block.positions))
+            for old_position in self.current_block.old_positions:
+                self.set_state(old_position, config.EMPTY)
+            self.current_block.old_positions.clear()
+            for position in self.current_block.positions:
+                self.set_state(position, config.FILLED)
+                debug('Position:', position)
 
 
 class Block:
@@ -200,6 +202,12 @@ class Block:
             self._store_old_positions()
             for position in self.positions:
                 position.rotate_clockwise_about_point(self.pivot)
+
+        # rotate position tracking sets to reflect new orientation
+        self.right_positions = self.above_positions
+        self.below_positions = self.right_positions
+        self.left_positions = self.below_positions
+        self.above_positions = self.left_positions
 
     def rotate_anticlockwise(self):
         #TODO
